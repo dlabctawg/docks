@@ -31,3 +31,28 @@ JSTOR_2words(unpack1grams,"passion","family",yearfrom=1900,yearto=2000)
 JSTOR_2wordcor(unpack1grams, "passion", "family",yearfrom=1900,yearto=2000)
 ```
 
+```{r}
+# subset the words to get nouns only
+nouns <-  JSTOR_dtmofnouns(unpack1grams, sparse = 0.75)
+# plot and tabulate the most frequent words over time
+JSTOR_freqwords(unpack1grams, nouns)
+# plot and tabulate words correlated with 'passion' over time, sadly broken :(
+#JSTOR_findassocs(unpack1grams, nouns, "passion")
+```
+
+```{r}
+# plot and tabulate clusters of documents that contain the word 'passion'
+JSTOR_clusterbywords(nouns, 'passion')
+# pretty tough to parse with a largish corpus!
+```
+
+```{r}
+# generate topic model with 50 topics (an arbitrary choice)
+my_model <- JSTOR_lda(unpack1grams, nouns, 50)
+# visualise document distances by topics
+JSTOR_lda_docdists(my_model)
+# plot and tabulate hot and cold topics
+JSTOR_lda_hotncoldtopics(my_model)
+
+```
+

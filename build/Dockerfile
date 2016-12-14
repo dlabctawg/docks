@@ -9,6 +9,6 @@ RUN R CMD javareconf
 
 RUN Rscript -e 'devtools::install_github("brooksambrose/JSTORr")'
 
-RUN cd ~ && git clone https://github.com/dlabctawg/jstorr-demo && unzip jstorr-demo/*zip
+RUN cd ~ && git clone https://github.com/dlabctawg/jstorr-demo
 
 #CMD["\init"]
