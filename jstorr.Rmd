@@ -1,0 +1,36 @@
+---
+title: "JSTORr"
+output: html_notebook
+---
+
+```{r, warning=FALSE}
+#! tutorial copied from: https://github.com/benmarwick/JSTORr
+# load the package to your current R session (do this every time you start R and use the functions)
+library(JSTORr)
+source('~/patch.R')
+```
+
+```{r}
+#! fails due to bug https://github.com/benmarwick/JSTORr/issues/30, installed earlier commit
+# change the path to where you unzipped your file on your computer
+unpack1grams <- JSTOR_unpack1grams(path = paste(getwd(),dir('dd',full.names = T),sep=.Platform$file.sep))
+```
+
+```{r}
+unpack1grams
+```
+
+```{r}
+#! year distribution
+
+plot(table(unpack1grams$bibliodata$year))
+
+# one word over time
+JSTOR_1word(unpack1grams, "family",yearfrom=1900)
+# two words over time
+?JSTOR_2words(unpack1grams,"husband","father")
+# correlation of words over time
+#JSTOR_2wordcor(unpack1grams, "pirate", "navy")
+
+```
+
