@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN R CMD javareconf
 
-RUN Rscript -e 'devtools::install_github("benmarwick/JSTORr",ref="25c6c8aa7e75cfa5d46bb8212ae001cc635c4424")'
+RUN Rscript -e 'devtools::install_github("brooksambrose/JSTORr")'
 
 RUN cd ~ && git clone https://github.com/dlabctawg/jstorr-demo && unzip jstorr-demo/*zip
 

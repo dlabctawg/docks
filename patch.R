@@ -89,9 +89,7 @@ JSTOR_unpack1grams<-function (parallel = FALSE, path = getwd())
       }
     }
   }
-  cit <- read.delim("citations.tsv", row.names = NULL, comment.char = "", 
-                    header = TRUE, stringsAsFactors = FALSE, colClasses = "character", 
-                    quote = "")
+  cit <- read_citations(dir(pattern='citations'))
   library(stringr)
   cit$id <- str_extract(chartr("/", "_", cit$id), ".*[^\t]")
   citfla <- cit[cit$publisher == "fla", ]

@@ -5,13 +5,12 @@ output: html_notebook
 
 ```{r, warning=FALSE}
 #! tutorial copied from: https://github.com/benmarwick/JSTORr
+#! due to bug fixes note that we've installed from https://github.com/brooksambrose/JSTORr
 # load the package to your current R session (do this every time you start R and use the functions)
 library(JSTORr)
-source('~/patch.R')
 ```
 
 ```{r}
-#! fails due to bug https://github.com/benmarwick/JSTORr/issues/30, installed earlier commit
 # change the path to where you unzipped your file on your computer
 unpack1grams <- JSTOR_unpack1grams(path = paste(getwd(),dir('dd',full.names = T),sep=.Platform$file.sep))
 ```
@@ -22,15 +21,13 @@ unpack1grams
 
 ```{r}
 #! year distribution
-
 plot(table(unpack1grams$bibliodata$year))
-
 # one word over time
-JSTOR_1word(unpack1grams, "family",yearfrom=1900)
+JSTOR_1word(unpack1grams, "passion")
+JSTOR_1word(unpack1grams, "family")
 # two words over time
-?JSTOR_2words(unpack1grams,"husband","father")
+JSTOR_2words(unpack1grams,"passion","family",yearfrom=1900,yearto=2000)
 # correlation of words over time
-#JSTOR_2wordcor(unpack1grams, "pirate", "navy")
-
+JSTOR_2wordcor(unpack1grams, "passion", "family",yearfrom=1900,yearto=2000)
 ```
 
