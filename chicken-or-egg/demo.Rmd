@@ -1,0 +1,43 @@
+```{r init,message=F,warning=F,include=F}
+rm(list = ls())
+cat('\014')
+source('src.R')
+```
+
+Hello! These functions use the `ngramr` package to query the Google Books Ngrams database. We'll use them to answer the question, "Which came first, the chicken or the egg?" After you've gone through the demo, feel free to change the `query` argument to ask your own "Which came first?" question.
+
+# Querying Google Ngrams
+
+```{r collect-data}
+tts<-gbng2tts.f(
+	query = c('chicken','egg')
+	,ys = 1900
+	,ye = 2000
+	,sm = 0
+	,cfso=F
+)
+
+```
+
+```{r inspect}
+tts
+```
+
+# Visualize
+
+```{r plot-data,include=T,eval=T}
+grgr<-tts2grgr.f(
+	gbng2tts=tts
+	,order=ec('chicken,egg')
+)
+grgr$plot
+```
+
+## Which Came First? Granger Causality
+
+Adapted from the R-Bloggers post [Chicken or the Egg? Granger-Causality for the masses](https://www.r-bloggers.com/chicken-or-the-egg-granger-causality-for-the-masses/) by Cory Lesmeister.
+
+```{r granger}
+grgr$pval
+```
+
