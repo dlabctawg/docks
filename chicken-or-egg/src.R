@@ -31,9 +31,9 @@ gbng2tts.f<-function(
   require(magrittr)
   require(data.table)
   require(ngramr)
-	if(!file.exists(dump)) stop(paste('Data dump directory',dump,'does not exist.'))
-	if(!file.exists(pipe)) stop(paste('Data pipe directory',pipe,'does not exist.'))
-	query<-data.table(query)
+  if(!file.exists(dump)) stop(paste('Data dump directory',dump,'does not exist.'))
+  if(!file.exists(pipe)) stop(paste('Data pipe directory',pipe,'does not exist.'))
+  query<-data.table(query)
   pfs<-.Platform$file.sep
   n<-dim(query) %>% as.list()
   names(n)<-c('r','c')
@@ -58,21 +58,21 @@ gbng2tts.f<-function(
     cat('Querying Google Ngrams in',length(p),ifelse(length(p)==1,'batch.\n','batches.\n'))
     tts<-lapply(p,function(x) ngram(phrases=x,corpus = corp,year_start=ys,year_end=ye,smoothing=sm,count=T))
     if(file.exists(dump)) {
-    	cat('Saving:\n')
-    	lapply(tts,function(x) {
-    		dfso<-sub(paste0(pfs,'+'),pfs,paste0(dump,pfs,'gbng',paste(range(x$Year),collapse=''),'-',paste0(unique(x$Phrase),collapse='-'),'.txt',sep='',collapse=''))
-    		cat('\"',dfso,'\"\n',sep='')
-    		write.table(x,file = dfso,sep='\t',quote = F,na = '',row.names = F,col.names = T)
-    		})
+      cat('Saving:\n')
+      lapply(tts,function(x) {
+        dfso<-sub(paste0(pfs,'+'),pfs,paste0(dump,pfs,'gbng',paste(range(x$Year),collapse=''),'-',paste0(unique(x$Phrase),collapse='-'),'.txt',sep='',collapse=''))
+        cat('\"',dfso,'\"\n',sep='')
+        write.table(x,file = dfso,sep='\t',quote = F,na = '',row.names = F,col.names = T)
+      })
     }
     tts<-rbindlist(lapply(tts,data.table))
     tts<-merge(x=tts,y=query,by.x='Phrase',by.y=names(query)[n$c])
     setattr(tts,'date.queried',Sys.Date())
     if(!file.exists(dump)) cat('Saving:\n')
     cat('\"',fso,'\"\n',sep='')
-		save(tts,file=fso)
-	}
-	tts
+    save(tts,file=fso)
+  }
+  tts
 }
 
 tts2grgr.f<-function(
@@ -99,7 +99,7 @@ tts2grgr.f<-function(
       ,Diffs=factor('First Difference',levels = lv)
     ),by=Phrase]
   ))
-
+  
   p <- ggplot(d, aes(Year,Frequency)) + geom_line() +
     geom_text(
       aes(x, y, label=Phrase)
@@ -116,44 +116,68 @@ tts2grgr.f<-function(
       ,strip.text.y = element_blank()
       ,axis.text.y = element_blank()
       ,axis.ticks = element_blank()
-      ) +
+    ) +
     scale_x_continuous(breaks=seq(round(min(d$Year),-1),round(max(d$Year),-1),10))  +
-   # scale_y_continuous(breaks=function(x) ifelse(max(x)==1,list(c(0,.5,1)),list(c(-.2,-.1,0,.1,.2)))[[1]]) +
+    # scale_y_continuous(breaks=function(x) ifelse(max(x)==1,list(c(0,.5,1)),list(c(-.2,-.1,0,.1,.2)))[[1]]) +
     ylab('Scaled Frequency')
-
-
+  
   if(length(unique(d$Phrase))>2) {
-  	warning('Granger test not implemented for more than two phrases.')
-  	g<-'Granger test not performed'
+    warning('Granger test not implemented for more than two phrases.')
+    g<-'Granger test not performed'
   } else {
-  	g<-list()
-  	setkey(d,Diffs,Phrase,Year)
-  	for(i in rev(lags)) g[[paste0('L-',i)]]<-grangertest(
-  		d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency]
-  		,order=i)
-  	#g[['l0']]<-grangertest(d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency],order=0)
-  	for(i in lags) g[[paste0('L',i)]]<-grangertest(
-  		d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency]
-  		,order=i)
+    g<-list()
+    setkey(d,Diffs,Phrase,Year)
+    for(i in rev(lags)) g[[paste0('L-',i)]]<-grangertest(
+      d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency]
+      ,order=i)
+    #g[['l0']]<-grangertest(d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency],order=0)
+    for(i in lags) g[[paste0('L',i)]]<-grangertest(
+      d[list('First Difference',order[1]),Frequency] ~ d[list('First Difference',order[2]),Frequency]
+      ,order=i)
   }
-  list(plot=p,test=g,pval=sapply(X = g,FUN = function(x) x[['Pr(>F)']]))
+  ret<-list(test=g,plot=list(d=p),pval=sapply(X = g,FUN = function(x) x[['Pr(>F)']][2]))
+  p2<-qplot(x = 1:length(ret$pval),y = 1-ret$pval,geom = 'line') + 
+    labs(x=paste('Lag order:',order),y='1-Pr(>F)',title='Probability that data fit model') +
+    scale_x_continuous(breaks=1:length(ret$pval),labels=names(g))
+  ret$plot$t=p2
+  ret
 }
 
 tts2arima.f<-function(
-	gbng2tts
-	,by=c('batch','Phrase')
+  gbng2tts
+  ,by=c('batch','Phrase')
 )
 {
-	require(forecast)
-	tts2arima<-gbng2tts[,list(aa=list(
-		auto.arima(
-			ts(Frequency,start = min(Year),frequency = 1)
-			,lambda = BoxCox.lambda(Frequency)
-			,stepwise = F
-			,seasonal = F
-			,trace=F)
-	)),keyby=by]
-	tts2arima[,Predicted:=list(lapply(aa,fitted))]
-	tts2arima[,`Predicted t-Score`:=list(lapply(fit,tscore))]
-	tts2arima
+  require(forecast)
+  tts2arima<-gbng2tts[,list(aa=list(
+    auto.arima(
+      ts(Frequency,start = min(Year),frequency = 1)
+      ,lambda = BoxCox.lambda(Frequency)
+      ,stepwise = F
+      ,seasonal = F
+      ,trace=F)
+  )),keyby=by]
+  tts2arima[,Predicted:=list(lapply(aa,fitted))]
+  tts2arima[,`Predicted t-Score`:=list(lapply(fit,tscore))]
+  tts2arima
+}
+
+# from http://stats.stackexchange.com/questions/160671/estimate-lag-for-granger-causality-test
+select.lags<-function(x,y,max.lag=8) {
+  y<-as.numeric(y)
+  y.lag<-embed(y,max.lag+1)[,-1,drop=FALSE]
+  x.lag<-embed(x,max.lag+1)[,-1,drop=FALSE]
+  
+  t<-tail(seq_along(y),nrow(y.lag))
+  
+  ms=lapply(1:max.lag,function(i) lm(y[t]~y.lag[,1:i]+x.lag[,1:i]))
+  
+  pvals<-mapply(function(i) anova(ms[[i]],ms[[i-1]])[2,"Pr(>F)"],max.lag:2)
+  ind<-which(pvals<0.05)[1]
+  ftest<-ifelse(is.na(ind),1,max.lag-ind+1)
+  
+  aic<-as.numeric(lapply(ms,AIC))
+  bic<-as.numeric(lapply(ms,BIC))
+  structure(list(ic=cbind(aic=aic,bic=bic),pvals=pvals,
+                 selection=list(aic=which.min(aic),bic=which.min(bic),ftest=ftest)))
 }
