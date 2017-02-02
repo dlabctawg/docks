@@ -1,0 +1,253 @@
+---
+title: 'John Henry and the Steam Drill: Qualitative Cross Validation of Large Corpus
+  Topic Models'
+---
+
+```{r init}
+rm(list=ls()) # clear objects in memory
+cat('\014') # clear console text
+source('~/john-henry/src.R') # where our code lives
+library(data.table) # because data.frames are icky
+library(ggplot2) # graphics!
+library(magrittr) # pipe like a pro!
+pfs<-.Platform$file.sep # to help with file naming
+```
+# Features of the Workflow
+
+The approach to topic modeling demonstrated here tries to balance convenience with methodological rigor. The goals include:
+
+* Scale to corpora of arbitrary size
+* Automate quantitative model selection
+* Translate model output into a practical format
+* Suggest a reading strategy for qualitative cross-validation
+
+As an example we'll use a collection of songs containing the terms "John" and "Henry" in the lyrics.
+
+# The Legend of John Henry
+
+For a brief introduction to the legend of John Henry a [short exhibit](http://www.wvencyclopedia.org/exhibits/12) by the West Virginia Encyclopedia offers a brief overview. John Henry is thought to have been a real person and the legend based on true events, but there exists no actual historical evidence of the story. John Henry was likely a hammer driver on a forced work gang leased from a local prison, a common reconfiguration of black labor exploitation after the nominal abolition of slavery following the American Civil War. He would have used a sledge hammer and rock drill bit to create holes into which dynamite could be lodged to clear rock for railroad tunnel construction.
+
+![](http://www.wvencyclopedia.org/assets/0001/1644/cohs-9580crop_standard.jpg?1285944011)
+
+Most contemporary folkloric and pop culture accounts imagine John Henry as driving railroad spikes to secure the actual cross-ties and rails of the railorad, rather than building tunnels. The popular concept of the legend concerns the arrival of mechanical drilling technology to replace hammer drivers. The manufacturer calls for a contest of the strongest driver to race the steam drill. John Henry beats the steam drill but dies in the process.
+
+![](http://www.wvencyclopedia.org/assets/0001/0686/Burleigh_2p_standard.jpg?1282584910)
+
+The popular concept of John Henry is an anachronism based in the labor movement culture of the Great Depression, as a story of labor power versus mechanization. The stories told in the earliest known [work songs](http://www.wvencyclopedia.org/assets/0001/1112/ditchdiggers_johnhenry.mp3) do not mention the contest with the steam drill, rather it is John Henry versus the hammer, labor forced at the hands of white prison overseers, that would kill him were he not so strong.
+
+# Data Management: qdpb
+
+This workflow follows a database management convention. We begin with a data quality `dq` stage where problems concerning sample selection and importing can be addressed. We pass these results to a data dump `dd` stage for cleaning and merging with metadata. Next there will be one or more data pipes `dp` to pass our cleaned data to perhaps several method-specific data formats. Finally the data base `db` stage may include analyzed and modeled results allowing you to accomplish your particular research objectives. Separating the workflow into these stages helps keep things organized while letting us intervene at controlled checkpoints to make different research decisions.
+
+## dq: A sample of song lyrics
+
+The corpora we will analyze here are twice removed from the original work songs, first by the labor movement culture of the 1930s, and second by the rise of rock and roll in the 1950s. How has the legend developed in popular music and what are its major themes and variations?
+
+First we build an importer to pass an arbitrary source, here song lyrics from [AZLyrics.com](www.azlyrics.com), to format into a common plain text format, a simple directory of text files whose names may include metadata.
+
+```{r corpus}
+jh<-azlyrics2ftxt.f(query = 'John Henry')
+```
+You may pass your own search term to the `query` argument to build your own corpus, and AZlyrics.com will return results that contain all of the words together or separately. By default the `mxpg=10` argument limits the number of downloaded records to 10 * 20 = 200. Note that AZlyrics.com may ban your IP address if you scrape too much or too quickly. To guard against this by default a `pause='rpois'` argument inserts a random delay of about 1.5 seconds between attemps to load and scrape each webpage. Your mileage may vary!
+
+```{r inspect-jh}
+str(jh)
+jh[,!ec('url,lyrics')]
+```
+
+The fields we were able to pull from AZlyrics.com were `r names(jh)`, where the last contains the full text of each song.
+
+## dd: A plain text corpus
+
+The `2ftxt` suffix to the `azlyrics2ftxt.f` function indicates that this importer returns a common full text data object that can be passed to any analytical pipeline that adopts the convention. Simply, the object is a directory full of separate plain text files.
+
+```{r inspect-dump}
+dir('~/john-henry/d/d',full.names = T) %>% sample(10) %>% sort() %>% cat(sep='\n') # a sample of saved plain text files
+```
+
+## dp: Piping to analytical methods
+
+Our first special object `ftxt2stmbow` is designed to pass to functions a bag-of-words data object, but in a way where the original full text can be easily recovered. This object also keeps track of data that have been lost due to pre-processing of texts. Note the `lt=2` argument, which stands for "lower threshold" and means that a word will be removed if it appears in only one two documents. Increasing this threshold may help eliminate noise in statistical methods, but it may also eliminate important information.
+
+```{r pipe1}
+jhp<-ftxt2stmbow.f(
+  source.dir = '~/john-henry/d/d'
+  ,out.dir = '~/john-henry/d/p'
+  ,lt = 2
+  ,save.to.disk = T
+  ,check.for.saved.output = F
+  )
+cat('\nItems in list:\n')
+names(jhp)
+jhp$meta
+```
+
+A piece of information we saved during piping was the proportion of words that were actually retained during pre-processing. The denominator includes stop words, but if we wanted to exclude them from the total we could edit our `azlyrics2ftxt.f` function to add an argument. Staying organized makes tinkering easy!
+
+###Document map
+
+When using bag-of-words models it's easy to lose track of the original source. The `ftxt2stmbow.f` or "full text to stm bag-of-words" function performs pre-processing and maps it to the original text. This allows us to check the consequences of our pre-processing decisions, gives us some additional information about how much of our texts can actually be modeled, and give us opportunities to map our model results back on to the originals. For example, the first song in our corpus has a document map that looks like this:
+
+```{r doc-map}
+jhp$map[[1]]
+```
+
+The `o` vector represents the original text split on whitespace, while the `t` vector is the tokenized version of the same. Where terms were dropped a blank space is listed in `t`. The `ord` or order variable lets us recover word order if we need to sort these tables.
+
+###Merging
+
+Let's update the metadata in our new object by merging it with data we gathered at the `dq` stage.
+
+```{r join}
+setkey(jhp$meta,names) # set the key to the common data value (the titles we generated for our files)
+setkey(jh,names) # again for the dq object
+jhp$meta<-merge(jhp$meta,jh[,!'lyrics']) # excluding the lyrics, which are already saved under the "txt" item in the list.
+rm(jh) # sad to see it go but we've retained all the info we need moving forward.
+```
+
+Let's plot a result! Is there a pattern of how tokens are selected into our pipeline in time? We can see this buy plotting our `count.prop` variable by the `year` variable. Here we just use a default smoother, but we could tinker with this to get a better sense of the trend, especially if it is nonlinear. This is a helpful way to spot problems with our source material.
+
+```{r db-token-selection}
+dbp1<-ggplot(jhp$meta,mapping = aes(x=year,y=count.prop)) + geom_point() + geom_smooth() + ggtitle('Trends in the number of terms retained after pre-processing over time')
+ggsave('~/john-henry/d/b/termretention.pdf',device='pdf')
+dbp1
+```
+
+Nothing too crazy, and it seems that most of our corpus is 50 to 60% of its original terms. It's now also clear that the bulk of our sample is after 2000, and indeed our median year is `r jhp$meta$year %>% na.omit %>% median`. This plot is a writeable result so we saved it to our `db` folder. Let's also add a new term to our metadata to code the century, which will give us a categorical variable to play with.
+
+```{r code-century}
+jhp$meta[,century:=factor(sapply(year,function(x) ifelse(x<2000,'20th','21st')))]
+jhp$meta[is.na(jhp$meta$century)
+         ,century:=sample(na.omit(jhp$meta$century),sum(is.na(jhp$meta$century)))
+         ] # impute missings to make life easier
+jhp$meta$century %>% summary
+```
+
+
+### Finally some topic modeling
+
+Let's get to some topic modeling. The object generated by `ftxt2stmbow.f` contains a sparse format of a document-term matrix, which is expected by the `stm` topic modeling package. Notice how this compares to our document map above for the first song.
+
+```{r sparse-doc-term}
+jhp$documents[[1]]
+```
+
+The first row is the index to our tokenized vocabulary list, and the second row are the counts of each term. Our `stmbow2topmod.f
+
+```{r bigk,include=F}
+bigk<-stmbow2topmod.f(
+		stmbow = jhp
+		,out.dir = '~/john-henry/d/p'
+		,k = 0
+		,it='Spectral'
+		,alpha=.5
+		,save.to.disk = T
+		,check.for.saved.output = T
+		,data=jhp$meta
+		,prevalence=~century
+		,verbose=F
+	)
+```
+
+Now let's visualize the model. Sorry these lines of code aren't wrappend neatly into a function #work-in-progress
+
+```{r bigk-viz}
+	prep <- estimateEffect( ~ century, bigk$model, jhp$meta)
+	dev.new(noRStudioGD = T)
+	pp<-plot.estimateEffect(
+		prep, "century", model=bigk$model
+		, method="pointestimate",cov.value1 = '20th',cov.value2 = '21st'
+		,labeltype  = 'custom',custom.labels = ''
+		,verbose.labels = F
+	)
+	dev.off()
+	pd<-data.table(
+		pp$topics %>% as.character()
+		,sapply(pp$means,function(x) x[1])
+		,do.call(rbind,lapply(pp$cis,function(x) x[,1]))
+		,sapply(pp$means,function(x) x[2])
+		,do.call(rbind,lapply(pp$cis,function(x) x[,2]))
+	)
+	setnames(pd,c(
+		'T'
+		,pp$uvals[1] %>% as.character()
+		,paste(c('cil','cir'),pp$uvals[1],sep='.')
+		,pp$uvals[2] %>% as.character()
+		,paste(c('cil','cir'),pp$uvals[2],sep='.')
+	))
+	l<-levels(pp$uvals)
+	pd[,diff:=get(l[1])-get(l[2])]
+	setkey(pd,diff)
+	pd[,T:=factor(T,levels=T)]
+	tp<-ggplot(pd) + geom_vline(xintercept=0,linetype=2) +
+		geom_point(aes(x=`20th`,y=1)) + geom_segment(aes(x=cil.20th,xend=cir.20th,y=1,yend=1)) +
+		geom_point(aes(x=`21st`,y=2)) + geom_segment(aes(x=cil.21st,xend=cir.21st,y=2,yend=2)) +
+		facet_wrap(~T) + theme(legend.position="bottom"
+													 #,panel.grid.minor.x = element_blank()
+													 ,panel.grid.minor.y = element_blank()
+													 ,panel.grid.major.y = element_blank()
+													 #,strip.background = element_blank()
+													 #,strip.placement = "outside"
+													 #,strip.text.y = element_blank()
+													 ,axis.text = element_blank()
+													 ,axis.ticks = element_blank()
+		)
+	ggsave(device = 'pdf',filename = 'prevalence.pdf',path='~/john-henry/d/b')
+	tp
+```
+
+# Clustering using network community detection
+
+These are the relations of our topics to our binary century coding "20th" or "21st". Too many topics! What can we do? Let's perform some clustering to reduce the number of categories.
+
+```{r netcom}
+	com<-lda2netcom.f(stmbow2topmod = bigk,freq.weight = jhp$meta$count.prop,reps = 2,out.dir='~/john-henry/d/p')
+	save(com,file=paste('~/john-henry/d/p','lda2netcom.RData',sep=pfs))
+	setkey(jhp$meta,names)
+	jhp$meta[names(membership(com$c)),group:=membership(com$c)]
+```
+
+
+
+And let's spit out some markup of the originals.
+
+```{r markup}
+	system(paste0('rm -r \"',paste0('~/john-henry/d/b',pfs,'viz'),'\"'))
+	jo<-lda2viz.f(bigk,out.dir='~/john-henry/d/b',rt=F,ob=F)
+	rel<-lda2rel.f(bigk)
+	setkey(jhp$meta,group)
+	odb<-paste0('~/john-henry/d/b',pfs,'groups')
+	system(paste0('rm -r \"',odb,'\"'))
+	for(i in unique(jhp$meta$group)){
+		odbc<-paste(odb,i,sep=pfs)
+		dir.create(odbc,showWarnings = F,recursive = T)
+		y<-lda2ftxt.f(
+			map = jhp$map
+			,doc.top=bigk$doc.top.theta
+			,top.word = bigk$top.word.phi.beta
+			,lda2rel = rel
+			,out.dir = odbc
+			,axes = F
+			,pdf = T
+			,spacing = .3
+			,sample = 0
+			,index = jhp$meta[list(i),ord]
+			,intensify = F
+			,fname = jhp$meta$names
+#			,top.ord = jo$top.ord
+		)
+	}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

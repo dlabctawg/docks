@@ -38,4 +38,9 @@ RUN Rscript -e 'devtools::install_github("seancarmody/ngramr")'
 
 RUN Rscript -e 'install.packages(pkgs = c("magrittr","formatR"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
 
+RUN Rscript -e 'install.packages(pkgs = c("preText"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
+
+# for john-henry
+RUN Rscript -e 'install.packages(pkgs = c("rvest"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
+
 #CMD["\init"]

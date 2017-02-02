@@ -10,9 +10,14 @@ Hello! These functions use the `ngramr` package to query the Google Books Ngrams
 
 ```{r collect-data}
 tts<-gbng2tts.f(
-	query = c('chicken','egg')
-	,ys = 1900
-	,ye = 2000
+  query = 
+    # ec('social,society') # box: inconclusive 4 year lag # fails
+    # ec('society,sociology') # box: some support 3 year lag # inconclusive
+    # ec('sociology,sociological') # box: right on top or possible 17 year lag (length of zero series?) # weak support (AIC)
+    # ec('sociological,sociologist') # box: nothing/right on top # right on top of each other
+    # ec('sociologist,sociology of') # box: fail # inconclusive order but strong 7 year lag
+	,ys = 1850
+	,ye = 2008
 	,sm = 0
 	,cfso=F
 )
@@ -28,7 +33,7 @@ tts
 ```{r plot-data,include=T,eval=T}
 grgr<-tts2grgr.f(
 	gbng2tts=tts
-	,order=ec('chicken,egg')
+	,mxlg = 20
 )
 grgr$plot
 ```
@@ -37,7 +42,4 @@ grgr$plot
 
 Adapted from the R-Bloggers post [Chicken or the Egg? Granger-Causality for the masses](https://www.r-bloggers.com/chicken-or-the-egg-granger-causality-for-the-masses/) by Cory Lesmeister.
 
-```{r granger}
-grgr$pval
-```
 

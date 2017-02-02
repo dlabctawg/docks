@@ -78,7 +78,7 @@ gbng2tts.f<-function(
 tts2grgr.f<-function(
   gbng2tts
   ,order=unique(gbng2tts$Phrase)
-  ,lags=1:5
+  ,mxlg=5
 ){
   require(data.table)
   require(forecast)
@@ -95,7 +95,7 @@ tts2grgr.f<-function(
     ),by=Phrase]
     ,d[,list(
       Year=Year[-1]
-      ,Frequency=diff(Frequency)  %>% lintran(s1=c(0,max(Frequency[-1]))) # %>% BoxCox(BoxCox.lambda(Frequency))
+      ,Frequency=diff(Frequency)  %>% lintran(s1=c(0,max(Frequency[-1]))) %>% BoxCox(BoxCox.lambda(Frequency))
       ,Diffs=factor('First Difference',levels = lv)
     ),by=Phrase]
   ))
@@ -123,23 +123,31 @@ tts2grgr.f<-function(
   
   if(length(unique(d$Phrase))>2) {
     warning('Granger test not implemented for more than two phrases.')
-    g<-'Granger test not performed'
+    return(p)
   } else {
-    g<-list()
     setkey(d,Diffs,Phrase,Year)
-    for(i in rev(lags)) g[[paste0('L-',i)]]<-grangertest(
-      d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency]
-      ,order=i)
-    #g[['l0']]<-grangertest(d[list('First Difference',order[2]),Frequency] ~ d[list('First Difference',order[1]),Frequency],order=0)
-    for(i in lags) g[[paste0('L',i)]]<-grangertest(
-      d[list('First Difference',order[1]),Frequency] ~ d[list('First Difference',order[2]),Frequency]
-      ,order=i)
+    rl<-select.lags(d[list('First Difference',order[2]),Frequency],d[list('First Difference',order[2]),Frequency],mxlg)
+    lr<-select.lags(d[list('First Difference',order[1]),Frequency],d[list('First Difference',order[2]),Frequency],mxlg)
   }
-  ret<-list(test=g,plot=list(d=p),pval=sapply(X = g,FUN = function(x) x[['Pr(>F)']][2]))
-  p2<-qplot(x = 1:length(ret$pval),y = 1-ret$pval,geom = 'line') + 
-    labs(x=paste('Lag order:',order),y='1-Pr(>F)',title='Probability that data fit model') +
-    scale_x_continuous(breaks=1:length(ret$pval),labels=names(g))
-  ret$plot$t=p2
+  ret<-list(
+    test=data.table(
+      lag=c(-(mxlg:1),0,1:mxlg)
+      ,pval=1-c(rev(rl$pvals),rep(NA,3),lr$pvals)
+      ,aic=c(rev(rl$ic[,'aic']),NA,lr$ic[,'aic'])
+      ,bic=c(rev(rl$ic[,'bic']),NA,lr$ic[,'bic'])
+    )
+    ,plot=list(d=p)
+  )
+  r<-dim(ret$test)[1]
+  ret$plot$t<-ggplot(data=melt(ret$test,id.vars = 'lag',variable.name = 'criterion')
+                     ,mapping = aes(x=lag,y=value)) +
+    geom_line() + geom_point(size=2,shape=21,fill=c(
+      replace(rep('black',r),which.min(ret$test$pval),'white')
+      ,replace(rep('black',r),which.min(ret$test$aic),'white')
+      ,replace(rep('black',r),which.min(ret$test$bic),'white')
+    )) +  facet_grid(criterion~.,scales = 'free_y') +
+    labs(title='Model Selection Criteria',x=paste('(',paste(paste(rev(order),collapse=' > '),')          Lags          (',paste(order,collapse=' > '),')'))) +
+    scale_x_continuous(breaks=ret$test$lag,minor_breaks = NULL) + scale_y_continuous(minor_breaks = NULL)
   ret
 }
 

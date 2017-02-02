@@ -2,8 +2,7 @@
 *
 # Except this file
 !.gitignore
-!build
-!chicken-or-egg
-!john-henry
-!jstorr
-!README.md
+!q
+!d
+!p
+!b

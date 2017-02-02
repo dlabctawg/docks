@@ -1,9 +1,0 @@
-Job Title: i<3ctawg
-Job ID: 2016.12.12.YF6SmDSg
-Requester: brooksambrose
-Query: http://dfr.jstor.org/fsearch/submitrequest?cs=ta%3Alove%5E1.0&fs=yrm1&view=text&
-View(s): citations|wordcounts|bigrams|trigrams|quadgrams|keyterms
-Format: CSV
-Documents Requested: 1000
-Date Processed: 2016-12-12 12:02:01.508960
-
