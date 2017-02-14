@@ -35,9 +35,16 @@ Most contemporary folkloric and pop culture accounts imagine John Henry as drivi
 
 The popular concept of John Henry is an anachronism based in the labor movement culture of the Great Depression, as a story of labor power versus mechanization. The stories told in the earliest known [work songs](http://www.wvencyclopedia.org/assets/0001/1112/ditchdiggers_johnhenry.mp3) do not mention the contest with the steam drill, rather it is John Henry versus the hammer, labor forced at the hands of white prison overseers, that would kill him were he not so strong.
 
-# Data Management: qdpb
+# Quality Discount Peanut Butter
 
-This workflow follows a database management convention. We begin with a data quality `dq` stage where problems concerning sample selection and importing can be addressed. We pass these results to a data dump `dd` stage for cleaning and merging with metadata. Next there will be one or more data pipes `dp` to pass our cleaned data to perhaps several method-specific data formats. Finally the data base `db` stage may include analyzed and modeled results allowing you to accomplish your particular research objectives. Separating the workflow into these stages helps keep things organized while letting us intervene at controlled checkpoints to make different research decisions.
+This workflow follows the data `qdpb` management convention, which organizes data processing into four stages:
+
+1. `dq` The *data query* stage concerns sampling frame definitions, sample selection, and importing from sources.
+2. `dd` The *data dump* stage concerns formatting, cleaning, and merging source data to prepare it for analysis.
+3. `dp` The *data pipeline* stage transforms cleaned data into one or more method-specific data formats.
+4. `db` The *data base* stage houses the transformed, analyzed, and modeled results that most closely answer the particular research problems and from which research findings are inferred.
+
+Separating the workflow into these stages helps keep things organized while letting us intervene at controlled checkpoints to make different research decisions.
 
 ## dq: A sample of song lyrics
 
