@@ -920,9 +920,12 @@ azlyrics2ftxt.f<-function(
   dqf<-paste0(dq,pfs,slug,'-n',nrow(azl),'.RData') %>% gsub(paste0(pfs,'+'),pfs,.)
   if(file.exists(dd)) {
     dd<-paste0(dd,pfs) %>% gsub(paste0(pfs,'+'),pfs,.)
-    cat('\nDumping text to',dd)
-    azl[,names:=mapply(function(t,a,y) paste0(na.omit(c(y,t,a)) %>% paste(collapse='-') %>% gsub('[^A-Za-z0-9-]','',.)),t=title,a=artist,y=year)]
-    azl[,mapply(function(l,n) writeLines(l,paste0(dd,n,'.txt')),l=lyrics,n=names)]
+    ddf<-paste(dd,'ftext',sep=pfs)
+    dir.create(ddf)
+    cat('\nDumping text and metadata to',dd)
+    azl[,names:=mapply(function(t,a,y) paste0(na.omit(c(y,t,a)) %>% paste(collapse='-') %>% gsub('[^A-Za-z0-9-]','',.)),t=title,a=artist,y=year) %>% make.unique(sep='')]
+    azl[,mapply(function(l,n) writeLines(l,paste0(ddf,pfs,n,'.txt')),l=lyrics,n=names)]
+    write.table(azl[,!'lyrics'],file = paste(dd,'meta.txt',sep=pfs),quote = F,sep = '\t',row.names = F)
   } else {cat('\nNo data dump. Set cfso=T to load saved query and then specify a dd directory.')}
   if(!cfso) {
     cat('\nSaving',dqf)

@@ -2,67 +2,88 @@
 title: 'John Henry and the Steam Drill: Qualitative Cross Validation of Large Corpus
   Topic Models'
 ---
+The approach to topic modeling demonstrated here tries to balance convenience with methodological rigor. The (aspirational) goals include:
 
-```{r init}
-rm(list=ls()) # clear objects in memory
-cat('\014') # clear console text
-source('~/john-henry/src.R') # where our code lives
-library(data.table) # because data.frames are icky
-library(ggplot2) # graphics!
-library(magrittr) # pipe like a pro!
-pfs<-.Platform$file.sep # to help with file naming
-```
-# Features of the Workflow
-
-The approach to topic modeling demonstrated here tries to balance convenience with methodological rigor. The goals include:
-
-* Scale to corpora of arbitrary size
+* Scale methods to corpora of arbitrary size
 * Automate quantitative model selection
 * Translate model output into a practical format
 * Suggest a reading strategy for qualitative cross-validation
 
 As an example we'll use a collection of songs containing the terms "John" and "Henry" in the lyrics.
 
+To get started, we'll establish our workspace.
+
+```{r init}
+rm(list=ls()) # clear existing objects in memory
+cat('\014') # clear console text
+source('~/john-henry/src.R') # where our code lives
+library(data.table) # because data.frames are icky
+library(ggplot2) # graphics!
+library(magrittr) # pipe like a pro!
+library(knitr)
+opts_chunk$set(
+  include=F # default don't display code output, set include=T for chunks individually
+  ,fig.align='center'
+  ,eval=F
+) 
+pfs<-.Platform$file.sep # to help with file naming
+```
+
 # The Legend of John Henry
 
 For a brief introduction to the legend of John Henry a [short exhibit](http://www.wvencyclopedia.org/exhibits/12) by the West Virginia Encyclopedia offers a brief overview. John Henry is thought to have been a real person and the legend based on true events, but there exists no actual historical evidence of the story. John Henry was likely a hammer driver on a forced work gang leased from a local prison, a common reconfiguration of black labor exploitation after the nominal abolition of slavery following the American Civil War. He would have used a sledge hammer and rock drill bit to create holes into which dynamite could be lodged to clear rock for railroad tunnel construction.
 
-![](http://www.wvencyclopedia.org/assets/0001/1644/cohs-9580crop_standard.jpg?1285944011)
+```{r echo=FALSE,eval=T,out.width='50%'}
+knitr::include_graphics('http://www.wvencyclopedia.org/assets/0001/1644/cohs-9580crop_standard.jpg?1285944011')
+```
 
 Most contemporary folkloric and pop culture accounts imagine John Henry as driving railroad spikes to secure the actual cross-ties and rails of the railorad, rather than building tunnels. The popular concept of the legend concerns the arrival of mechanical drilling technology to replace hammer drivers. The manufacturer calls for a contest of the strongest driver to race the steam drill. John Henry beats the steam drill but dies in the process.
 
-![](http://www.wvencyclopedia.org/assets/0001/0686/Burleigh_2p_standard.jpg?1282584910)
+```{r echo=FALSE,eval=T,out.width='50%'}
+knitr::include_graphics('http://www.wvencyclopedia.org/assets/0001/0686/Burleigh_2p_standard.jpg?1282584910')
+```
 
-The popular concept of John Henry is an anachronism based in the labor movement culture of the Great Depression, as a story of labor power versus mechanization. The stories told in the earliest known [work songs](http://www.wvencyclopedia.org/assets/0001/1112/ditchdiggers_johnhenry.mp3) do not mention the contest with the steam drill, rather it is John Henry versus the hammer, labor forced at the hands of white prison overseers, that would kill him were he not so strong.
 
-# Quality Discount Peanut Butter
+The popular concept of John Henry is an anachronism based in the labor movement culture of the Great Depression, as a story of labor power versus mechanization. The stories told in the earliest known work songs do not mention the contest with the steam drill; rather it is John Henry versus the hammer, labor forced at the hands of white prison overseers, that would kill him were he not so strong.
 
-This workflow follows the data `qdpb` management convention, which organizes data processing into four stages:
+<audio controls>
+ <source src="http://www.wvencyclopedia.org/assets/0001/1112/ditchdiggers_johnhenry.mp3"
+         type='audio/mp3'>
+ <!-- The next two lines are only executed if the browser doesn't support MP4 files -->
+ <!-- The next line will only be executed if the browser doesn't support the <audio> tag-->
+ <p>Your user agent does not support the HTML5 Audio element.</p>
+</audio>
 
-1. `dq` The *data query* stage concerns sampling frame definitions, sample selection, and importing from sources.
-2. `dd` The *data dump* stage concerns formatting, cleaning, and merging source data to prepare it for analysis.
-3. `dp` The *data pipeline* stage transforms cleaned data into one or more method-specific data formats.
-4. `db` The *data base* stage houses the transformed, analyzed, and modeled results that most closely answer the particular research problems and from which research findings are inferred.
+The corpora we will analyze below are twice removed from the original work songs, first by the labor movement culture of the 1930s, and second by the rise of rock and roll in the 1950s. How has the legend developed in popular music and what are its major themes and variations?
+
+# Methods
+
+This workflow follows the *quality discount peanut butter* or `qdpb` data management convention, which organizes data processing into four stages:
+
+1. **`dq`** The *data query* stage concerns sampling frame definitions, sample selection, and importing from sources.
+2. **`dd`** The *data dump* stage concerns formatting, cleaning, and merging queried source data to prepare it for analysis.
+3. **`dp`** The *data pipeline* stage transforms cleaned data into one or more method-specific data formats.
+4. **`db`** The *data base* stage houses the transformed, analyzed, and modeled results that most closely answer the particular research problems and from which research findings are inferred.
 
 Separating the workflow into these stages helps keep things organized while letting us intervene at controlled checkpoints to make different research decisions.
 
-## dq: A sample of song lyrics
+## dq: Submitting a query
 
-The corpora we will analyze here are twice removed from the original work songs, first by the labor movement culture of the 1930s, and second by the rise of rock and roll in the 1950s. How has the legend developed in popular music and what are its major themes and variations?
-
-First we build an importer to pass an arbitrary source, here song lyrics from [AZLyrics.com](www.azlyrics.com), to format into a common plain text format, a simple directory of text files whose names may include metadata.
+First we build an importer to pass an arbitrary source, here html files including song lyrics from [AZLyrics.com](www.azlyrics.com), into a human and machine readable full text format. The function returns a useful full text convention for a data dump: a directory of UTF-8 plain text files as well as a tab-delimitted table of metadata keyed to the unique names of the text files. This is a useful data convention for browsing manually and for sharing with other researchers.
 
 ```{r corpus}
 jh<-azlyrics2ftxt.f(query = 'John Henry')
 ```
-You may pass your own search term to the `query` argument to build your own corpus, and AZlyrics.com will return results that contain all of the words together or separately. By default the `mxpg=10` argument limits the number of downloaded records to 10 * 20 = 200. Note that AZlyrics.com may ban your IP address if you scrape too much or too quickly. To guard against this by default a `pause='rpois'` argument inserts a random delay of about 1.5 seconds between attemps to load and scrape each webpage. Your mileage may vary!
+You may pass your own search term to the `query` argument to build your own corpus, and AZlyrics.com will return results that contain all of the words together or separately. The first time you run your query set `cfso=FALSE`, which will scrape the website and generate a saved version of the results, which can subsequently be accessed by setting `cfso=TRUE`. By default the `mxpg=10` argument limits the number of downloaded records to $10 * 20 = 200$.
+
+Note that AZlyrics.com may temporarily ban your IP address if you scrape too much or too quickly. To guard against this by default a `pause='rpois'` argument inserts a random delay of about 1.5 seconds between attemps to load and scrape each webpage. Your mileage may vary!
 
 ```{r inspect-jh}
 str(jh)
 jh[,!ec('url,lyrics')]
 ```
 
-The fields we were able to pull from AZlyrics.com were `r names(jh)`, where the last contains the full text of each song.
+The fields we were able to pull from AZlyrics.com were `r try(names(jh))`, where the last contains the full text of each song.
 
 ## dd: A plain text corpus
 
@@ -120,7 +141,7 @@ ggsave('~/john-henry/d/b/termretention.pdf',device='pdf')
 dbp1
 ```
 
-Nothing too crazy, and it seems that most of our corpus is 50 to 60% of its original terms. It's now also clear that the bulk of our sample is after 2000, and indeed our median year is `r jhp$meta$year %>% na.omit %>% median`. This plot is a writeable result so we saved it to our `db` folder. Let's also add a new term to our metadata to code the century, which will give us a categorical variable to play with.
+Nothing too crazy, and it seems that most of our corpus is 50 to 60% of its original terms. It's now also clear that the bulk of our sample is after 2000, and indeed our median year is `r try(jhp$meta$year %>% na.omit %>% median)`. This plot is a writeable result so we saved it to our `db` folder. Let's also add a new term to our metadata to code the century, which will give us a categorical variable to play with.
 
 ```{r code-century}
 jhp$meta[,century:=factor(sapply(year,function(x) ifelse(x<2000,'20th','21st')))]
