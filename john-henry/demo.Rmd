@@ -70,7 +70,10 @@ Separating the workflow into these stages helps keep things organized while lett
 First we build an importer to pass an arbitrary source, here html files including song lyrics from [AZLyrics.com](www.azlyrics.com), into a human and machine readable full text format. The function returns a useful full text convention for a data dump: a directory of plain text files as well as a tab-delimitted table of metadata keyed to the unique names of the text files. This is a useful data convention for browsing manually and for sharing with other researchers.
 
 ```{r corpus}
-jh<-azlyrics2ftxt.f(query = 'John Henry')
+jh<-azlyrics2ftxt.f(
+  query = 'John Henry'
+  #,cfso = F # decomment line if you want to query AZlyrics directly, otherwise load saved output
+)
 ```
 You may pass your own search term to the `query` argument to build your own corpus, and AZlyrics.com will return results that contain all of the words together or separately. The first time you run your query set `cfso=FALSE`, which will scrape the website and generate a saved version of the results, which can subsequently be accessed by setting `cfso=TRUE`. By default the `mxpg=10` argument limits the number of downloaded records to $10 * 20 = 200$.
 
