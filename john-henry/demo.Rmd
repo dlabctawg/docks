@@ -26,7 +26,6 @@ opts_chunk$set(
   ,fig.align='center'
   ,eval=F
 ) 
-pfs<-.Platform$file.sep # to help with file naming
 ```
 
 # The Legend of John Henry
@@ -60,7 +59,7 @@ The corpora we will analyze below are twice removed from the original work songs
 
 This workflow follows the *quality discount peanut butter* or `qdpb` data management convention, which organizes data processing into four stages:
 
-1. **`dq`** The *data query* stage concerns sampling frame definitions, sample selection, and importing from sources.
+1. **`dq`** The *data query* stage concerns sampling frame definitions, sample selection problems, and importing from sources.
 2. **`dd`** The *data dump* stage concerns formatting, cleaning, and merging queried source data to prepare it for analysis.
 3. **`dp`** The *data pipeline* stage transforms cleaned data into one or more method-specific data formats.
 4. **`db`** The *data base* stage houses the transformed, analyzed, and modeled results that most closely answer the particular research problems and from which research findings are inferred.
@@ -69,7 +68,7 @@ Separating the workflow into these stages helps keep things organized while lett
 
 ## dq: Submitting a query
 
-First we build an importer to pass an arbitrary source, here html files including song lyrics from [AZLyrics.com](www.azlyrics.com), into a human and machine readable full text format. The function returns a useful full text convention for a data dump: a directory of UTF-8 plain text files as well as a tab-delimitted table of metadata keyed to the unique names of the text files. This is a useful data convention for browsing manually and for sharing with other researchers.
+First we build an importer to pass an arbitrary source, here html files including song lyrics from [AZLyrics.com](www.azlyrics.com), into a human and machine readable full text format. The function returns a useful full text convention for a data dump: a directory of plain text files as well as a tab-delimitted table of metadata keyed to the unique names of the text files. This is a useful data convention for browsing manually and for sharing with other researchers.
 
 ```{r corpus}
 jh<-azlyrics2ftxt.f(query = 'John Henry')
@@ -78,16 +77,19 @@ You may pass your own search term to the `query` argument to build your own corp
 
 Note that AZlyrics.com may temporarily ban your IP address if you scrape too much or too quickly. To guard against this by default a `pause='rpois'` argument inserts a random delay of about 1.5 seconds between attemps to load and scrape each webpage. Your mileage may vary!
 
-```{r inspect-jh}
+```{r inspect-jh1}
 str(jh)
-jh[,!ec('url,lyrics')]
+```
+
+```{r inspect-jh2}
+jh[,!'lyrics']
 ```
 
 The fields we were able to pull from AZlyrics.com were `r try(names(jh))`, where the last contains the full text of each song.
 
 ## dd: A plain text corpus
 
-The `2ftxt` suffix to the `azlyrics2ftxt.f` function indicates that this importer returns a common full text data object that can be passed to any analytical pipeline that adopts the convention. Simply, the object is a directory full of separate plain text files.
+The `2ftxt` suffix to the `azlyrics2ftxt.f` function indicates that this importer returns a common full text data object that can be passed to any analytical pipeline that adopts the convention. The object is saved in an `.RData` file and as a directory of separate plain text files.
 
 ```{r inspect-dump}
 dir('~/john-henry/d/d',full.names = T) %>% sample(10) %>% sort() %>% cat(sep='\n') # a sample of saved plain text files
@@ -224,13 +226,13 @@ Now let's visualize the model. Sorry these lines of code aren't wrappend neatly 
 	tp
 ```
 
-# Clustering using network community detection
+### Clustering
 
-These are the relations of our topics to our binary century coding "20th" or "21st". Too many topics! What can we do? Let's perform some clustering to reduce the number of categories.
+...using network community detection. These are the relations of our topics to our binary century coding "20th" or "21st". Too many topics! What can we do? Let's perform some clustering to reduce the number of categories.
 
 ```{r netcom}
 	com<-lda2netcom.f(stmbow2topmod = bigk,freq.weight = jhp$meta$count.prop,reps = 2,out.dir='~/john-henry/d/p')
-	save(com,file=paste('~/john-henry/d/p','lda2netcom.RData',sep=pfs))
+	save(com,file=paste('~/john-henry/d/p','lda2netcom.RData',sep=pfs()))
 	setkey(jhp$meta,names)
 	jhp$meta[names(membership(com$c)),group:=membership(com$c)]
 ```
@@ -240,14 +242,14 @@ These are the relations of our topics to our binary century coding "20th" or "21
 And let's spit out some markup of the originals.
 
 ```{r markup}
-	system(paste0('rm -r \"',paste0('~/john-henry/d/b',pfs,'viz'),'\"'))
+	system(paste0('rm -r \"',paste0('~/john-henry/d/b',pfs(),'viz'),'\"'))
 	jo<-lda2viz.f(bigk,out.dir='~/john-henry/d/b',rt=F,ob=F)
 	rel<-lda2rel.f(bigk)
 	setkey(jhp$meta,group)
-	odb<-paste0('~/john-henry/d/b',pfs,'groups')
+	odb<-paste0('~/john-henry/d/b',pfs(),'groups')
 	system(paste0('rm -r \"',odb,'\"'))
 	for(i in unique(jhp$meta$group)){
-		odbc<-paste(odb,i,sep=pfs)
+		odbc<-paste(odb,i,sep=pfs())
 		dir.create(odbc,showWarnings = F,recursive = T)
 		y<-lda2ftxt.f(
 			map = jhp$map
