@@ -1,6 +1,7 @@
 # utilities
 lintran<-function(x,s1=c(0,1),s2=c(0,1)) {a=diff(s2)/diff(s1);b=s2[1]-a*s1[1];return(a*x+b)}
 ec<-function(x) strsplit(x,',')[[1]]
+pfs<-function(path) ifelse(missing(path),.Platform$file.sep,gsub(paste0(.Platform$file.sep,'+'),.Platform$file.sep,path))
 
 #'Converts full text data to stm style document term matrix. Redundant with stm function textProcessor()
 #'
@@ -102,7 +103,7 @@ p$meta[,ord:=1:length(ord)]
   }
 	ftxt2stmbow<-do.call(list,c(txt=ifelse(drt,list(txt[-p$docs.removed]),list(txt)),ftxt2stmbow['map'],p))
 
-	if(save.to.disk) try(save(ftxt2stmbow,file=gsub(paste0(pfs,'+'),pfs,paste(out.dir,sfn,sep=pfs))))
+	if(save.to.disk) try(save(ftxt2stmbow,file=paste(out.dir,sfn,sep=pfs) %>% pfs()))
 	ftxt2stmbow
 }
 
@@ -899,13 +900,13 @@ azlyrics2ftxt.f<-function(
         t<-read_html(j)
         cat('.')
         ret[[length(ret)+1]]<-data.table(
-          url=j
-          ,title=t %>% html_nodes(xpath="//b") %>% html_text %>% extract(2) %>% sub('^.(.+).$','\\1',.) %>% ifelse(length(.),.,NA_character_)
+          title=t %>% html_nodes(xpath="//b") %>% html_text %>% extract(2) %>% sub('^.(.+).$','\\1',.) %>% ifelse(length(.),.,NA_character_)
           ,artist=t %>% html_nodes(xpath="//b") %>% html_text %>% extract(1) %>% tolower %>% toTitleCase %>% sub(' [^ ]+$','',.) %>% ifelse(length(.),.,NA_character_)
           ,featuring=t %>% html_nodes(xpath='/html/body/div[3]/div/div[2]/span') %>% html_text %>% sub('^[^ ]+ (.+).$','\\1',.) %>% ifelse(length(.),.,NA_character_)
           ,album=t %>% html_nodes(xpath='/html/body/div[3]/div/div[2]/div[12]/a') %>% html_text %>% sub('^\"(.+)+\" \\(([0-9]+)\\)$','\\1',.) %>% ifelse(length(.),.,NA_character_)
           ,year=t %>% html_nodes(xpath='/html/body/div[3]/div/div[2]/div[12]/a') %>% html_text %>% sub('^\"(.+)+\" \\(([0-9]+)\\)$','\\2',.) %>% as.integer %>% ifelse(length(.),.,NA_integer_)
           ,lyrics=t %>% html_nodes(xpath='/html/body/div[3]/div/div[2]/div[6]') %>% as.character %>% gsub('<br><br>','\n',.) %>% gsub('\n*<[^>]*>','',.) %>% sub('^[\r\n]+','',.) %>% ifelse(length(.),.,NA_character_)
+          ,url=j
         )
       }
     }
@@ -917,12 +918,18 @@ azlyrics2ftxt.f<-function(
   }
   pfs<-.Platform$file.sep
   if(!file.exists(dq)) dq<-getwd()
-  dqf<-paste0(dq,pfs,slug,'-n',nrow(azl),'.RData') %>% gsub(paste0(pfs,'+'),pfs,.)
+  dqf<-paste0(dq,pfs,slug,'-n',nrow(azl),'.RData') %>% pfs()
   if(file.exists(dd)) {
-    dd<-paste0(dd,pfs) %>% gsub(paste0(pfs,'+'),pfs,.)
-    cat('\nDumping text to',dd)
-    azl[,names:=mapply(function(t,a,y) paste0(na.omit(c(y,t,a)) %>% paste(collapse='-') %>% gsub('[^A-Za-z0-9-]','',.)),t=title,a=artist,y=year)]
-    azl[,mapply(function(l,n) writeLines(l,paste0(dd,n,'.txt')),l=lyrics,n=names)]
+    td<-function(x) gsub('\t','\\t',x)
+    dd<-paste0(dd,pfs) %>% pfs()
+    ddf<-paste(dd,'ftext',sep=pfs) %>% pfs()
+    dir.create(ddf)
+    cat('\nDumping text and metadata to',dd)
+    azl[,names:=mapply(function(t,a,y) paste0(na.omit(c(y,t,a)) %>% paste(collapse='-') %>% gsub('[^A-Za-z0-9-]','',.)),t=title,a=artist,y=year) %>% make.unique(sep='')]
+    azl[,mapply(function(l,n) writeLines(l,paste0(ddf,pfs,n,'.txt')),l=td(lyrics),n=names)]
+    write.table(azl[,list(
+      names=td(names),title=td(title),artist=td(artist),featuring=td(featuring),album=td(album),year,url
+      )],file = paste(dd,'meta.txt',sep=pfs),quote = F,sep = '\t',row.names = F)
   } else {cat('\nNo data dump. Set cfso=T to load saved query and then specify a dd directory.')}
   if(!cfso) {
     cat('\nSaving',dqf)
