@@ -43,4 +43,7 @@ RUN Rscript -e 'install.packages(pkgs = c("preText"), dependencies = TRUE,repos=
 # for john-henry
 RUN Rscript -e 'install.packages(pkgs = c("rvest"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
 
+#in-container data if folks don't want to volume map
+RUN git clone https://github.com/dlabctawg/docks /home/rstudio
+
 #CMD["\init"]

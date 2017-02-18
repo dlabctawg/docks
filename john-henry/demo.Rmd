@@ -1,6 +1,5 @@
 ---
-title: 'John Henry and the Steam Drill: Qualitative Cross Validation of Large Corpus
-  Topic Models'
+title: 'John Henry and the Steam Drill: Qualitative Cross Validation of Large Corpus Topic Models'
 ---
 
 ```{r init}
