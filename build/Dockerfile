@@ -6,22 +6,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	software-properties-common
 
 ## Add repository for java 8
-RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list \
-&& echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list \
-&& apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 \
-&& apt-get update && apt-get install -y --no-install-recommends \
-	oracle-java8-installer
+#RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list \
+#&& echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list \
+#&& apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 \
+#&& apt-get update && apt-get install -y --no-install-recommends \
+#	oracle-java8-installer
 
 ## Install igraph
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libigraph0 \
 	libigraph0-dev
 
-## Install other libraries to build rJava
+## Install Java and other libraries to build rJava
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	liblzma-dev \
 	libbz2-dev \
-	libicu-dev
+	libicu-dev \
+	openjdk-8-jdk
 
 ## R package prereqs
 RUN apt-get update && apt-get install -y --no-install-recommends \
