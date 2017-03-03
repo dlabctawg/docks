@@ -1,14 +1,16 @@
 FROM rocker/verse:3.3.2
 MAINTAINER "Brooks Ambrose" brooksambrose@berkeley.edu
 
-## Add repository for java 8
+## Add stuff
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	software-properties-common \
-	&& echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list \
-	&& echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list \
-	&& apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 \
-	&& apt-get update \
-	&& apt-get install oracle-java8-installer
+	software-properties-common
+
+## Add repository for java 8
+RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list \
+&& echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list \
+&& apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 \
+&& apt-get update && apt-get install -y --no-install-recommends \
+	oracle-java8-installer
 
 ## Install igraph
 RUN apt-get update && apt-get install -y --no-install-recommends \
