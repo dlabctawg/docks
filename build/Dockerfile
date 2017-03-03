@@ -12,17 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 #&& apt-get update && apt-get install -y --no-install-recommends \
 #	oracle-java8-installer
 
-## Install igraph
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	libigraph0 \
-	libigraph0-dev
-
 ## Install Java and other libraries to build rJava
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN echo "deb http://ftp.de.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
+&& apt-get update && apt-get install -y --no-install-recommends \
 	liblzma-dev \
 	libbz2-dev \
 	libicu-dev \
 	openjdk-8-jdk
+
+## Install igraph
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	libigraph0 \
+	libigraph0-dev
 
 ## R package prereqs
 RUN apt-get update && apt-get install -y --no-install-recommends \
