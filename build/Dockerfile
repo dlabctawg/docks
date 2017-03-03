@@ -66,7 +66,7 @@ RUN Rscript -e 'install.packages(pkgs = c("rvest"), dependencies = TRUE,repos="h
 RUN Rscript -e '{install.packages(pkgs = c("coreNLP"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25");coreNLP::downloadCoreNLP()}'
 
 #in-container data if folks don't want to volume map
-ADD https://api.github.com/repos/dlabctawg/docks/git/refs/heads/master
+ADD https://api.github.com/repos/dlabctawg/docks/git/refs/heads/master version.json
 RUN git clone https://github.com/dlabctawg/docks /home/rstudio
 
 #CMD["\init"]
