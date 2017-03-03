@@ -63,7 +63,7 @@ RUN Rscript -e 'install.packages(pkgs = c("preText"), dependencies = TRUE,repos=
 RUN Rscript -e 'install.packages(pkgs = c("rvest"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
 
 # for johannes
-RUN Rscript -e 'install.packages(pkgs = c("coreNLP"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
+RUN Rscript -e '{install.packages(pkgs = c("coreNLP"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25");coreNLP::downloadCoreNLP()}'
 
 #in-container data if folks don't want to volume map
 RUN git clone https://github.com/dlabctawg/docks /home/rstudio
