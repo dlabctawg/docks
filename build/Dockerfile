@@ -14,9 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ## Install Java and other libraries to build rJava
 RUN echo "deb http://ftp.de.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
-&& apt-get update && apt-get install -y --no-install-recommends \
+&& apt-get update && apt-get install -y --no-install-recommends -t jessie-backports  \
+	ca-certificates-java \
+#	openjdk-8-jdk-headless \
+#	openjdk-8-jre-headless \
 	openjdk-8-jre \
-	openjdk-8-jdk-headless \
 	openjdk-8-jdk
 
 ## Install other libraries to build rJava
