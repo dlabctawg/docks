@@ -15,10 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ## Install Java and other libraries to build rJava
 RUN echo "deb http://ftp.de.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
 && apt-get update && apt-get install -y --no-install-recommends \
+	openjdk-8-jre \
+	openjdk-8-jdk-headless \
+	openjdk-8-jdk
+
+## Install other libraries to build rJava
+RUN apt-get update && apt-get install -y --no-install-recommends \
 	liblzma-dev \
 	libbz2-dev \
-	libicu-dev \
-	openjdk-8-jdk
+	libicu-dev
 
 ## Install igraph
 RUN apt-get update && apt-get install -y --no-install-recommends \
