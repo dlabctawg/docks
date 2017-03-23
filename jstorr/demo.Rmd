@@ -3,23 +3,26 @@ title: "JSTORr"
 output: html_notebook
 ---
 
-```{r, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 #! tutorial copied from: https://github.com/benmarwick/JSTORr
 #! due to bug fixes note that we've installed from https://github.com/brooksambrose/JSTORr
 # load the package to your current R session (do this every time you start R and use the functions)
 library(JSTORr)
+library(magrittr)
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+(zip<-dir(getwd(),recursive = T,full.names=T,pattern='\\.zip$'))
+system(paste('unzip',zip,'-d ~/d/d'))
 # change the path to where you unzipped your file on your computer
-unpack1grams <- JSTOR_unpack1grams(path = paste(getwd(),dir('dd',full.names = T),sep=.Platform$file.sep))
+unpack1grams <- JSTOR_unpack1grams(path = zip %>% sub('d/q','d/d',.) %>% sub('\\.zip$','',.) )
 ```
 
 ```{r}
 unpack1grams
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #! year distribution
 plot(table(unpack1grams$bibliodata$year))
 # one word over time
@@ -31,24 +34,29 @@ JSTOR_2words(unpack1grams,"passion","family",yearfrom=1900,yearto=2000)
 JSTOR_2wordcor(unpack1grams, "passion", "family",yearfrom=1900,yearto=2000)
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 # subset the words to get nouns only
 nouns <-  JSTOR_dtmofnouns(unpack1grams, sparse = 0.75)
 # plot and tabulate the most frequent words over time
-JSTOR_freqwords(unpack1grams, nouns)
+fw<-JSTOR_freqwords(unpack1grams, nouns)
 # plot and tabulate words correlated with 'passion' over time, sadly broken :(
 #JSTOR_findassocs(unpack1grams, nouns, "passion")
 ```
-
 ```{r}
+#inspect
+fw
+```
+
+
+```{r, message=FALSE, warning=FALSE}
 # plot and tabulate clusters of documents that contain the word 'passion'
 JSTOR_clusterbywords(nouns, 'passion')
 # pretty tough to parse with a largish corpus!
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # generate topic model with 50 topics (an arbitrary choice)
-my_model <- JSTOR_lda(unpack1grams, nouns, 50)
+my_model <- JSTOR_lda(unpack1grams, nouns, 8)
 # visualise document distances by topics
 JSTOR_lda_docdists(my_model)
 # plot and tabulate hot and cold topics

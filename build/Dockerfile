@@ -1,17 +1,36 @@
 FROM rocker/verse:3.3.2
 MAINTAINER "Brooks Ambrose" brooksambrose@berkeley.edu
 
+## Add stuff
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	software-properties-common
+
+## Add repository for java 8
+#RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list \
+#&& echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list \
+#&& apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 \
+#&& apt-get update && apt-get install -y --no-install-recommends \
+#	oracle-java8-installer
+
+## Install Java and other libraries to build rJava
+RUN echo "deb http://ftp.de.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
+&& apt-get update && apt-get install -y --no-install-recommends -t jessie-backports  \
+	ca-certificates-java \
+#	openjdk-8-jdk-headless \
+#	openjdk-8-jre-headless \
+	openjdk-8-jre \
+	openjdk-8-jdk
+
+## Install other libraries to build rJava
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	liblzma-dev \
+	libbz2-dev \
+	libicu-dev
+
 ## Install igraph
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libigraph0 \
 	libigraph0-dev
-
-## Install Java and libraries to build rJava
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	liblzma-dev \
-	libbz2-dev \
-	libicu-dev \
-	default-jdk
 
 ## R package prereqs
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -42,5 +61,15 @@ RUN Rscript -e 'install.packages(pkgs = c("preText"), dependencies = TRUE,repos=
 
 # for john-henry
 RUN Rscript -e 'install.packages(pkgs = c("rvest"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25")'
+
+# for johannes
+RUN Rscript -e '{install.packages(pkgs = c("coreNLP"), dependencies = TRUE,repos="https://mran.microsoft.com/snapshot/2016-12-25");library(coreNLP);downloadCoreNLP();initCoreNLP()}'
+
+# drill a security hole
+RUN chmod o+w /home/rstudio
+
+#in-container data if folks don't want to volume map
+ADD https://api.github.com/repos/dlabctawg/docks/git/refs/heads/master version.json
+RUN git clone https://github.com/dlabctawg/docks /home/rstudio
 
 #CMD["\init"]
