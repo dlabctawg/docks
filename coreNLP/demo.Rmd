@@ -1,0 +1,13 @@
+# coreNLP vignette
+
+```{r}
+library(coreNLP)
+initCoreNLP()
+```
+
+# fun stuff
+
+```{r}
+# use cases
+```
+
